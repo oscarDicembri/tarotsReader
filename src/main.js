@@ -106,3 +106,59 @@ function displayTable(scene) {
         });
     });
 }
+
+function showCardDetail(scene, cardData, positionLabel) {
+    const { centerX, centerY, width, height } = scene.cameras.main;
+
+    // 1. DIMMER: Un rettangolo nero che copre tutto il tavolo
+    const dimmer = scene.add.rectangle(centerX, centerY, width, height, 0x000000, 0.7);
+    dimmer.setAlpha(0); // Parte invisibile
+    dimmer.setInteractive(); // Impedisce di cliccare le carte sotto
+
+    // 2. LA CARTA IN DETTAGLIO: Creiamo una versione "grande" della carta
+    const detailCard = scene.add.rectangle(centerX, centerY, 200, 280, 0x333333)
+        .setStrokeStyle(3, 0xd4af37);
+
+    // 3. TESTO DESCRIZIONE (Parte Destra)
+    const title = scene.add.text(centerX + 100, centerY - 100, cardData.name.toUpperCase(), {
+        fontSize: '32px', fontFamily: 'Georgia', fill: '#d4af37'
+    }).setAlpha(0);
+
+    const description = scene.add.text(centerX + 100, centerY, cardData.meaning_up, {
+        fontSize: '18px', fontFamily: 'Arial', fill: '#ffffff', wordWrap: { width: 350 }
+    }).setAlpha(0);
+
+    const interpretation = scene.add.text(centerX + 100, centerY + 120, `- ${cardData.name} symbolizes your ${positionLabel.toLowerCase()}`, {
+        fontSize: '16px', fontStyle: 'italic', fill: '#ecf0f1'
+    }).setAlpha(0);
+
+    // 4. ANIMAZIONE (Il "Tween")
+    scene.tweens.add({
+        targets: [dimmer],
+        alpha: 1,
+        duration: 400
+    });
+
+    scene.tweens.add({
+        targets: detailCard,
+        x: centerX - 200, // Si sposta a sinistra
+        scale: 1.5,       // Diventa più grande
+        duration: 600,
+        ease: 'Cubic.easeOut', // Movimento fluido che rallenta alla fine
+        onComplete: () => {
+            // Quando la carta ha finito di muoversi, mostriamo il testo
+            scene.tweens.add({
+                targets: [title, description, interpretation],
+                alpha: 1,
+                x: '+=20', // Piccolo spostamento verso destra per un effetto "fade-in" dinamico
+                duration: 300
+            });
+        }
+    });
+
+    // 5. CHIUDERE IL DETTAGLIO: Cliccando sul dimmer si torna indietro
+    dimmer.once('pointerdown', () => {
+        // Qui dovresti fare l'animazione inversa, ma per ora semplifichiamo:
+        [dimmer, detailCard, title, description, interpretation].forEach(obj => obj.destroy());
+    });
+}
