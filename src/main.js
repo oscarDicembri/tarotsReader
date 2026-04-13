@@ -109,56 +109,69 @@ function displayTable(scene) {
 
 function showCardDetail(scene, cardData, positionLabel) {
     const { centerX, centerY, width, height } = scene.cameras.main;
+    const gap = 20; // Spazio tra i blocchi di testo
 
-    // 1. DIMMER: Un rettangolo nero che copre tutto il tavolo
-    const dimmer = scene.add.rectangle(centerX, centerY, width, height, 0x000000, 0.7);
-    dimmer.setAlpha(0); // Parte invisibile
-    dimmer.setInteractive(); // Impedisce di cliccare le carte sotto
+    // 1. DIMMER (Nero trasparente)
+    const dimmer = scene.add.rectangle(centerX, centerY, width, height, 0x000000, 0.8)
+        .setAlpha(0).setInteractive();
 
-    // 2. LA CARTA IN DETTAGLIO: Creiamo una versione "grande" della carta
+    // 2. CARTA (Placeholder grande)
     const detailCard = scene.add.rectangle(centerX, centerY, 200, 280, 0x333333)
         .setStrokeStyle(3, 0xd4af37);
 
-    // 3. TESTO DESCRIZIONE (Parte Destra)
-    const title = scene.add.text(centerX + 100, centerY - 100, cardData.name.toUpperCase(), {
-        fontSize: '32px', fontFamily: 'Georgia', fill: '#d4af37'
+    // 3. CREAZIONE TESTI (Senza posizione definitiva ancora)
+    // Li mettiamo a X molto lontana per ora, ci serve solo misurarli
+    const textX = centerX + 100;
+
+    const title = scene.add.text(textX, 0, cardData.name.toUpperCase(), {
+        fontSize: '32px', fontFamily: 'Georgia', fill: '#d4af37',
+        wordWrap: { width: 350 }, align: 'left'
     }).setAlpha(0);
 
-    const description = scene.add.text(centerX + 100, centerY, cardData.meaning_up, {
-        fontSize: '18px', fontFamily: 'Arial', fill: '#ffffff', wordWrap: { width: 350 }
+    const description = scene.add.text(textX, 0, cardData.meaning_up, {
+        fontSize: '18px', fontFamily: 'Arial', fill: '#ffffff',
+        wordWrap: { width: 350 }, align: 'left'
     }).setAlpha(0);
 
-    const interpretation = scene.add.text(centerX + 100, centerY + 120, `- ${cardData.name} symbolizes your ${positionLabel.toLowerCase()}`, {
-        fontSize: '16px', fontStyle: 'italic', fill: '#ecf0f1'
+    const interpretation = scene.add.text(textX, 0, `- ${cardData.name} symbolizes your ${positionLabel.toLowerCase()}`, {
+        fontSize: '16px', fontStyle: 'italic', fill: '#ecf0f1',
+        wordWrap: { width: 350 }, align: 'left'
     }).setAlpha(0);
 
-    // 4. ANIMAZIONE (Il "Tween")
-    scene.tweens.add({
-        targets: [dimmer],
-        alpha: 1,
-        duration: 400
-    });
+    // 4. CALCOLO ALTEZZA TOTALE (L'algoritmo di impilamento)
+    const totalHeight = title.height + description.height + interpretation.height + (gap * 2);
+    
+    // Punto di inizio per centrare il blocco verticalmente
+    let currentY = centerY - (totalHeight / 2);
+
+    // Assegniamo le Y finali in sequenza
+    title.y = currentY;
+    currentY += title.height + gap;
+
+    description.y = currentY;
+    currentY += description.height + gap;
+
+    interpretation.y = currentY;
+
+    // 5. ANIMAZIONI (Tweens)
+    scene.tweens.add({ targets: dimmer, alpha: 1, duration: 400 });
 
     scene.tweens.add({
         targets: detailCard,
-        x: centerX - 200, // Si sposta a sinistra
-        scale: 1.5,       // Diventa più grande
+        x: centerX - 220,
+        scale: 1.5,
         duration: 600,
-        ease: 'Cubic.easeOut', // Movimento fluido che rallenta alla fine
+        ease: 'Cubic.easeOut',
         onComplete: () => {
-            // Quando la carta ha finito di muoversi, mostriamo il testo
             scene.tweens.add({
                 targets: [title, description, interpretation],
                 alpha: 1,
-                x: '+=20', // Piccolo spostamento verso destra per un effetto "fade-in" dinamico
-                duration: 300
+                duration: 400
             });
         }
     });
 
-    // 5. CHIUDERE IL DETTAGLIO: Cliccando sul dimmer si torna indietro
     dimmer.once('pointerdown', () => {
-        // Qui dovresti fare l'animazione inversa, ma per ora semplifichiamo:
         [dimmer, detailCard, title, description, interpretation].forEach(obj => obj.destroy());
     });
 }
